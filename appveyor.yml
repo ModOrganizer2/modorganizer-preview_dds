@@ -18,8 +18,8 @@ artifacts:
     name: dds_preview_main_py
   - path: src\preview_dds_en.ts
     name: dds_preview__translation_file
-  - path: src\DDS
-    name: dds_python_files
+  - path: src\DDS\*.py
+    name: dds_python_lib_files
     type: zip
 on_success:
   - ps: Set-Location -Path $env:APPVEYOR_BUILD_FOLDER
