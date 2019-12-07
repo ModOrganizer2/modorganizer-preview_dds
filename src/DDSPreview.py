@@ -321,7 +321,7 @@ class DDSPreview(mobase.IPluginPreview):
         return self.__tr("Lets you preview DDS files by actually uploading them to the GPU.")
 
     def version(self):
-        return mobase.VersionInfo(0, 1, 0, mobase.ReleaseType.prealpha)
+        return mobase.VersionInfo(1, 0, 0, 0)
 
     def isActive(self):
         return True
