@@ -61,12 +61,11 @@ function(PYQT5_CREATE_TRANSLATION _qm_files)
         endif()
     endforeach()
     foreach(_ts_file ${_my_tsfiles})
+        set(_lst_file_srcs)
         if(_my_sources)
           # Qt made a file listing all sources and used that as an argument, but pylupdate5 doesn't support that.
           # Qt allowed directories to be listed as sources, but pylupdate5 requires their contents to be listed.
           get_filename_component(_ts_name ${_ts_file} NAME_WE)
-          #set(_ts_lst_file "${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/${_ts_name}_lst_file")
-          set(_lst_file_srcs)
           foreach(_lst_file_src ${_my_sources})
               if(IS_DIRECTORY ${_lst_file_src})
                 file(GLOB _directory_contents ${_lst_file_src}/*.py ${_lst_file_src}/*.ui)
@@ -79,7 +78,7 @@ function(PYQT5_CREATE_TRANSLATION _qm_files)
         add_custom_command(OUTPUT ${_ts_file}
             COMMAND ${PYTHON_ROOT}/PCbuild/amd64/python.exe
             ARGS -m PyQt5.pylupdate_main ${_lupdate_options} ${_lst_file_srcs} -ts ${_ts_file}
-            DEPENDS ${_my_sources}
+            DEPENDS ${_lst_file_srcs}
             WORKING_DIRECTORY ${PYTHON_ROOT}
             VERBATIM)
     endforeach()
