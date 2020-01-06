@@ -3,8 +3,6 @@ from enum import IntEnum, IntFlag, auto
 import struct
 from typing import ClassVar, List
 
-from PyQt5.QtCore import qDebug
-
 from .glstuff import GL_IMAGE_FORMAT, CompressedGLTextureFormat, UncompressedGLTextureFormat
 
 DDS_MAGIC_NUMBER = b"DDS " #b"\x20\x53\x44\x44"
@@ -512,7 +510,6 @@ def buildConverter(byteCount, usedBitCounts = {8}, bitmasks = None, intmasks = N
 
 def getGLFormat(pixelFormat, dxt10Header = None):
     # Half or more of this function may be unreachable or otherwise redundant.
-    qDebug(str(pixelFormat))
     glInternalFormat = None
     dxgiFormat = None
     if dxt10Header:
@@ -602,7 +599,6 @@ def getGLFormat(pixelFormat, dxt10Header = None):
             desc += str(lastBitCount)
         
         desc = desc.upper()
-        qDebug(desc)
         glFormat = GL_IMAGE_FORMAT[desc] if desc in GL_IMAGE_FORMAT.__members__ else None
         
         numComponents = len(toSort)

@@ -173,19 +173,14 @@ class DDSWidget(QOpenGLWidget):
             format.setOption(QSurfaceFormat.DebugContext)
             self.setFormat(format)
             self.logger = QOpenGLDebugLogger(self)
-        
-        qDebug("__init__()")
     
     def __del__(self):
-        qDebug("__del__()")
         self.cleanup()
     
     def __dtor__(self):
-        qDebug("__dtor__()")
         self.cleanup()
     
     def initializeGL(self):
-        qDebug("initializeGL()")
         if self.logger:
             self.logger.initialize()
             self.logger.messageLogged.connect(lambda message: qDebug(self.__tr("OpenGL debug message: {0}").fomat(message.message())))
@@ -242,7 +237,6 @@ class DDSWidget(QOpenGLWidget):
         self.texture = self.ddsFile.asQOpenGLTexture(gl, QOpenGLContext.currentContext())
     
     def resizeGL(self, w, h):
-        qDebug("resizeGL(" + str(w) + ", " + str(h) + ")")
         aspectRatioTex = self.texture.width() / self.texture.height() if self.texture else 1.0
         aspectRatioWidget = w / h
         ratioRatio = aspectRatioTex / aspectRatioWidget
@@ -252,7 +246,6 @@ class DDSWidget(QOpenGLWidget):
         self.program.release()
     
     def paintGL(self):
-        qDebug("paintGL()")
         gl = QOpenGLContext.currentContext().versionFunctions(glVersionProfile)
         
         vaoBinder = QOpenGLVertexArrayObject.Binder(self.vao)
@@ -282,7 +275,6 @@ class DDSWidget(QOpenGLWidget):
         self.program.release()
     
     def cleanup(self):
-        qDebug("cleanup()")
         if not self.clean:
             self.makeCurrent()
             
@@ -329,7 +321,7 @@ class DDSPreview(mobase.IPluginPreview):
         return self.__tr("Lets you preview DDS files by actually uploading them to the GPU.")
 
     def version(self):
-        return mobase.VersionInfo(0, 1, 0, mobase.ReleaseType.prealpha)
+        return mobase.VersionInfo(1, 0, 0, 0)
 
     def isActive(self):
         return True
@@ -345,7 +337,6 @@ class DDSPreview(mobase.IPluginPreview):
         return ["dds"]
     
     def genFilePreview(self, fileName, maxSize):
-        qDebug(fileName)
         ddsFile = DDSFile(fileName)
         ddsFile.load()
         layout = QGridLayout()
@@ -382,8 +373,6 @@ class DDSPreview(mobase.IPluginPreview):
             newColour = QColorDialog.getColor(ddsWidget.getBackgroundColour(), button, "Background colour", QColorDialog.ShowAlphaChannel)
             if newColour.isValid():
                 ddsWidget.setBackgroundColour(newColour)
-                print(str(type(self)))
-                print(str(type(self.__organizer)))
                 self.__organizer.setPluginSetting(self.name(), "background r", newColour.red())
                 self.__organizer.setPluginSetting(self.name(), "background g", newColour.green())
                 self.__organizer.setPluginSetting(self.name(), "background b", newColour.blue())

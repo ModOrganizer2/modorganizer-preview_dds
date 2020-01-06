@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from PyQt5.QtCore import QCoreApplication, qDebug
+from PyQt5.QtCore import QCoreApplication, qCritical
 from PyQt5.QtGui import QOpenGLTexture
 
 from . import DDSDefinitions
@@ -27,21 +27,18 @@ class DDSFile:
         
     def load(self):
         with Path(self.fileName).open('rb') as file:
-            qDebug("Opened")
             magicNumber = file.read(4)
             if magicNumber != DDSDefinitions.DDS_MAGIC_NUMBER:
-                qDebug(self.__tr("Magic number mismatch."))
+                qCritical(self.__tr("Magic number mismatch."))
                 raise DDSReadException()
             
             self.header.fromStream(file)
-            qDebug(str(self.header))
             
             if self.header.ddspf.dwFlags & DDSDefinitions.DDS_PIXELFORMAT.Flags.DDPF_FOURCC:
                 fourCC = self.header.ddspf.dwFourCC
                 if fourCC == b"DX10":
                     self.dxt10Header = DDSDefinitions.DDS_HEADER_DXT10()
                     self.dxt10Header.fromStream(file)
-                    qDebug(str(self.dxt10Header))
             else:
                 fourCC = None
             
@@ -128,13 +125,13 @@ class DDSFile:
                         compatible = True
                         break
                 if not compatible:
-                    qDebug(self.__tr("OpenGL driver incompatible with texture format."))
+                    qCritical(self.__tr("OpenGL driver incompatible with texture format."))
                     return None
         
         if self.header.dwCaps2 & DDSDefinitions.DDS_HEADER.Caps2.DDSCAPS2_CUBEMAP:
             texture = QOpenGLTexture(QOpenGLTexture.TargetCubeMap)
             if self.header.dwWidth != self.header.dwHeight:
-                qDebug(self.__tr("Cubemap faces must be square"))
+                qCritical(self.__tr("Cubemap faces must be square"))
                 return None
         else:
             # Assume GL_TEXTURE_2D for now
@@ -146,13 +143,8 @@ class DDSFile:
         texture.setMipLevels(mipCount)
         texture.setMipLevelRange(0, mipCount - 1)
         texture.setSize(self.header.dwWidth, self.header.dwHeight)
-        qDebug(str(self.glFormat.internalFormat))
         texture.setFormat(self.glFormat.internalFormat)
         texture.allocateStorage()
-        
-        if not self.glFormat.compressed:
-            qDebug(str(self.glFormat.format))
-            qDebug(str(self.glFormat.type))
         
         if self.header.dwCaps2 & DDSDefinitions.DDS_HEADER.Caps2.DDSCAPS2_CUBEMAP:
             # Lisa hasn't whipped David Wang into shape yet. At least there are fewer bugs than under Raja.
