@@ -463,10 +463,10 @@ def buildConverter(byteCount, usedBitCounts = {8}, bitmasks = None, intmasks = N
             bIntMask = unpackCombiner(*struct.unpack("<" + unpackFormat, bitmasks["b"][:byteCount]))
         if "a" in bitmasks:
             aIntMask = unpackCombiner(*struct.unpack("<" + unpackFormat, bitmasks["a"][:byteCount]))
-        if "l" in bitmasks:
-            rIntMask = unpackCombiner(*struct.unpack("<" + unpackFormat, bitmasks["l"][:byteCount]))
-            gIntMask = unpackCombiner(*struct.unpack("<" + unpackFormat, bitmasks["l"][:byteCount]))
-            bIntMask = unpackCombiner(*struct.unpack("<" + unpackFormat, bitmasks["l"][:byteCount]))
+        if "luminance" in bitmasks:
+            rIntMask = unpackCombiner(*struct.unpack("<" + unpackFormat, bitmasks["luminance"][:byteCount]))
+            gIntMask = unpackCombiner(*struct.unpack("<" + unpackFormat, bitmasks["luminance"][:byteCount]))
+            bIntMask = unpackCombiner(*struct.unpack("<" + unpackFormat, bitmasks["luminance"][:byteCount]))
     
     rDivisor = 2 ** bin(rIntMask).count("1") - 1
     gDivisor = 2 ** bin(gIntMask).count("1") - 1
@@ -573,9 +573,9 @@ def getGLFormat(pixelFormat, dxt10Header = None):
             starts["a"] = firstBit(aBitmask)
             namedBitmasks["a"] = aBitmask
         if lumBitmask:
-            bitCounts["l"] = bitCount(lumBitmask)
-            starts["l"] = firstBit(lumBitmask)
-            namedBitmasks["l"] = lumBitmask
+            bitCounts["luminance"] = bitCount(lumBitmask)
+            starts["luminancel"] = firstBit(lumBitmask)
+            namedBitmasks["luminance"] = lumBitmask
         
         toSort = []
         for key in starts:
