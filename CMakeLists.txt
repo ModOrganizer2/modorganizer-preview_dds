@@ -1,11 +1,8 @@
-# Version chosen arbitrarily
-CMAKE_MINIMUM_REQUIRED(VERSION 3.0)
+cmake_minimum_required(VERSION 3.16)
 
-PROJECT(preview_dds LANGUAGES NONE)
+project(preview_dds LANGUAGES NONE)
+set(project_type python_plugin)
+set(enable_warnings OFF)
 
-# Value passed from modorganizer-umbrella
-SET(DEPENDENCIES_DIR CACHE PATH "")
-
-LIST(APPEND CMAKE_PREFIX_PATH ${QT_ROOT}/lib/cmake)
-
-ADD_SUBDIRECTORY(src)
+include(../cmake_common/project.cmake)
+add_subdirectory(src)
