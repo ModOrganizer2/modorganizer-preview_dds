@@ -574,7 +574,7 @@ def getGLFormat(pixelFormat, dxt10Header = None):
             namedBitmasks["a"] = aBitmask
         if lumBitmask:
             bitCounts["luminance"] = bitCount(lumBitmask)
-            starts["luminancel"] = firstBit(lumBitmask)
+            starts["luminance"] = firstBit(lumBitmask)
             namedBitmasks["luminance"] = lumBitmask
         
         toSort = []
