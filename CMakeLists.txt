@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(preview_dds LANGUAGES NONE)
+project(DDSPreview LANGUAGES NONE)
 set(project_type python_plugin)
 set(enable_warnings OFF)
 
