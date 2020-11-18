@@ -323,9 +323,6 @@ class DDSPreview(mobase.IPluginPreview):
     def version(self):
         return mobase.VersionInfo(1, 0, 0, 0)
 
-    def isActive(self):
-        return True
-
     def settings(self):
         return [mobase.PluginSetting("log gl errors", self.__tr("If enabled, log OpenGL errors and debug messages. May decrease performance."), False),
                 mobase.PluginSetting("background r", self.__tr("Red channel of background colour"), 0),
