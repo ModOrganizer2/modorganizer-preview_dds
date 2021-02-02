@@ -76,32 +76,32 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="DDSPreview.py" line="330"/>
+        <location filename="DDSPreview.py" line="327"/>
         <source>If enabled, log OpenGL errors and debug messages. May decrease performance.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="DDSPreview.py" line="331"/>
+        <location filename="DDSPreview.py" line="328"/>
         <source>Red channel of background colour</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="DDSPreview.py" line="332"/>
+        <location filename="DDSPreview.py" line="329"/>
         <source>Green channel of background colour</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="DDSPreview.py" line="333"/>
+        <location filename="DDSPreview.py" line="330"/>
         <source>Blue channel of background colour</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="DDSPreview.py" line="334"/>
+        <location filename="DDSPreview.py" line="331"/>
         <source>Alpha channel of background colour</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="DDSPreview.py" line="368"/>
+        <location filename="DDSPreview.py" line="365"/>
         <source>Pick background colour</source>
         <translation type="unfinished"></translation>
     </message>
