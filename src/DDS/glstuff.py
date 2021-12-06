@@ -1,5 +1,6 @@
 from enum import IntEnum
 
+
 class GL_IMAGE_FORMAT(IntEnum):
     GL_BYTE = 0x1400
     GL_UNSIGNED_BYTE = 0x1401
@@ -111,9 +112,9 @@ class GL_IMAGE_FORMAT(IntEnum):
     GL_RGBA16F = 0x881A
     GL_RGB16F = 0x881B
     GL_R11F_G11F_B10F = 0x8C3A
-    GL_UNSIGNED_INT_10F_11F_11F_REV_EXT = 0x8C3B # EXT_packed_float
+    GL_UNSIGNED_INT_10F_11F_11F_REV_EXT = 0x8C3B  # EXT_packed_float
     GL_RGB9_E5 = 0x8C3D
-    GL_UNSIGNED_INT_5_9_9_9_REV_EXT = 0x8C3E # EXT_texture_shared_exponent
+    GL_UNSIGNED_INT_5_9_9_9_REV_EXT = 0x8C3E  # EXT_texture_shared_exponent
     GL_SRGB = 0x8C40
     GL_SRGB8 = 0x8C41
     GL_SRGB_ALPHA = 0x8C42
@@ -173,12 +174,13 @@ class GL_IMAGE_FORMAT(IntEnum):
     GL_COMPRESSED_RGBA8_ETC2_EAC = 0x9278
     GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC = 0x9279
 
+
 class GLTextureFormat:
     def __init__(self, requirements, internalFormat, compressed):
         self.requirements = requirements
         self.internalFormat = internalFormat
         self.compressed = compressed
-        
+
         if internalFormat.name.endswith("UI"):
             self.samplerType = "UI"
         elif internalFormat.name.endswith("I"):
@@ -186,12 +188,14 @@ class GLTextureFormat:
         else:
             self.samplerType = "F"
 
+
 class CompressedGLTextureFormat(GLTextureFormat):
     def __init__(self, requirements, internalFormat):
         super().__init__(requirements, internalFormat, True)
 
+
 class UncompressedGLTextureFormat(GLTextureFormat):
-    def __init__(self, requirements, internalFormat, format, type, converter = None):
+    def __init__(self, requirements, internalFormat, format, type, converter=None):
         super().__init__(requirements, internalFormat, False)
         self.format = format
         self.type = type
