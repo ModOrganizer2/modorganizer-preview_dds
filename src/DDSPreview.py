@@ -186,7 +186,7 @@ class DDSWidget(QOpenGLWidget):
         if self.logger:
             self.logger.initialize()
             self.logger.messageLogged.connect(
-                lambda message: qDebug(self.__tr("OpenGL debug message: {0}").fomat(message.message())))
+                lambda message: qDebug(self.tr("OpenGL debug message: {0}").fomat(message.message())))
             self.logger.startLogging()
 
         gl = QOpenGLVersionFunctionsFactory.get(glVersionProfile)
@@ -300,7 +300,7 @@ class DDSWidget(QOpenGLWidget):
     def getBackgroundColour(self):
         return self.backgroundColour
 
-    def __tr(self, str):
+    def tr(self, str):
         return QCoreApplication.translate("DDSWidget", str)
 
 
@@ -321,18 +321,18 @@ class DDSPreview(mobase.IPluginPreview):
         return "AnyOldName3"
 
     def description(self):
-        return self.__tr("Lets you preview DDS files by actually uploading them to the GPU.")
+        return self.tr("Lets you preview DDS files by actually uploading them to the GPU.")
 
     def version(self):
         return mobase.VersionInfo(1, 0, 0, 0)
 
     def settings(self):
-        return [mobase.PluginSetting("log gl errors", self.__tr(
+        return [mobase.PluginSetting("log gl errors", self.tr(
             "If enabled, log OpenGL errors and debug messages. May decrease performance."), False),
-                mobase.PluginSetting("background r", self.__tr("Red channel of background colour"), 0),
-                mobase.PluginSetting("background g", self.__tr("Green channel of background colour"), 0),
-                mobase.PluginSetting("background b", self.__tr("Blue channel of background colour"), 0),
-                mobase.PluginSetting("background a", self.__tr("Alpha channel of background colour"), 0)]
+                mobase.PluginSetting("background r", self.tr("Red channel of background colour"), 0),
+                mobase.PluginSetting("background g", self.tr("Green channel of background colour"), 0),
+                mobase.PluginSetting("background b", self.tr("Blue channel of background colour"), 0),
+                mobase.PluginSetting("background a", self.tr("Alpha channel of background colour"), 0)]
 
     def supportedExtensions(self):
         return ["dds"]
@@ -356,7 +356,7 @@ class DDSPreview(mobase.IPluginPreview):
         widget.setLayout(layout)
         return widget
 
-    def __tr(self, str):
+    def tr(self, str):
         return QCoreApplication.translate("DDSPreview", str)
 
     def __makeLabel(self, ddsFile):
@@ -366,7 +366,7 @@ class DDSPreview(mobase.IPluginPreview):
         return label
 
     def __makeColourButton(self, ddsWidget):
-        button = QPushButton(self.__tr("Pick background colour"))
+        button = QPushButton(self.tr("Pick background colour"))
         savedColour = QColor(self.__organizer.pluginSetting(self.name(), "background r"),
                              self.__organizer.pluginSetting(self.name(), "background g"),
                              self.__organizer.pluginSetting(self.name(), "background b"),

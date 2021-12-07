@@ -34,7 +34,7 @@ class DDSFile:
         with Path(self.fileName).open('rb') as file:
             magicNumber = file.read(4)
             if magicNumber != DDSDefinitions.DDS_MAGIC_NUMBER:
-                qCritical(self.__tr("Magic number mismatch."))
+                qCritical(self.tr("Magic number mismatch."))
                 raise DDSReadException()
 
             self.header.fromStream(file)
@@ -88,7 +88,7 @@ class DDSFile:
         # Pixel Format says the FourCC
         elif self.header.ddspf.dwFlags & DDSDefinitions.DDS_PIXELFORMAT.Flags.DDPF_FOURCC:
             fourCC = self.header.ddspf.dwFourCC
-            format = self.__tr("{0} (equivalent to {1})").format(fourCC.decode('ascii'),
+            format = self.tr("{0} (equivalent to {1})").format(fourCC.decode('ascii'),
                                                                  DDSDefinitions.fourCCToDXGI(fourCC).name.replace(
                                                                      "DXGI_FORMAT_", ""))
         # We've got bitmasks for the colour channels
@@ -96,26 +96,26 @@ class DDSFile:
             # This could be prettier if there was logic to detect that certain common bitmasks represented things more easily represented, like RGBA8
             if self.header.ddspf.dwFlags & (
                 DDSDefinitions.DDS_PIXELFORMAT.Flags.DDPF_RGB | DDSDefinitions.DDS_PIXELFORMAT.Flags.DDPF_YUV):
-                format += self.__tr("Red bitmask {0}, Green bitmask {1}, Blue bitmask {2}").format(
+                format += self.tr("Red bitmask {0}, Green bitmask {1}, Blue bitmask {2}").format(
                     self.header.ddspf.dwRBitMask.hex().upper(), self.header.ddspf.dwGBitMask.hex().upper(),
                     self.header.ddspf.dwBBitMask.hex().upper())
             if self.header.ddspf.dwFlags & DDSDefinitions.DDS_PIXELFORMAT.Flags.DDPF_LUMINANCE:
                 if format != "":
                     format += ", "
-                format += self.__tr("Luminance bitmask {0}").format(self.header.ddspf.dwRBitMask.hex().upper())
+                format += self.tr("Luminance bitmask {0}").format(self.header.ddspf.dwRBitMask.hex().upper())
             if self.header.ddspf.dwFlags & (
                 DDSDefinitions.DDS_PIXELFORMAT.Flags.DDPF_ALPHA | DDSDefinitions.DDS_PIXELFORMAT.Flags.DDPF_ALPHAPIXELS):
                 if format != "":
                     format += ", "
-                format += self.__tr("Alpha bitmask {0}").format(self.header.ddspf.dwABitMask.hex().upper())
+                format += self.tr("Alpha bitmask {0}").format(self.header.ddspf.dwABitMask.hex().upper())
 
-        size = self.__tr("{0}×{1}").format(self.header.dwWidth, self.header.dwHeight)
+        size = self.tr("{0}×{1}").format(self.header.dwWidth, self.header.dwHeight)
 
-        dimensions = self.__tr("Cubemap") if self.isCubemap else self.__tr("2D")
+        dimensions = self.tr("Cubemap") if self.isCubemap else self.tr("2D")
 
-        mipmaps = self.__tr("Mipmapped") if self.mipLevels() != 1 else self.__tr("No mipmaps")
+        mipmaps = self.tr("Mipmapped") if self.mipLevels() != 1 else self.tr("No mipmaps")
 
-        return self.__tr("{0}, {1} {2}, {3}").format(format, size, dimensions, mipmaps)
+        return self.tr("{0}, {1} {2}, {3}").format(format, size, dimensions, mipmaps)
 
     def mipLevels(self):
         if self.header.dwFlags & DDSDefinitions.DDS_HEADER.Flags.DDSD_MIPMAPCOUNT:
@@ -137,13 +137,13 @@ class DDSFile:
                         compatible = True
                         break
                 if not compatible:
-                    qCritical(self.__tr("OpenGL driver incompatible with texture format."))
+                    qCritical(self.tr("OpenGL driver incompatible with texture format."))
                     return None
 
         if self.header.dwCaps2 & DDSDefinitions.DDS_HEADER.Caps2.DDSCAPS2_CUBEMAP:
             texture = QOpenGLTexture(QOpenGLTexture.Target.TargetCubeMap)
             if self.header.dwWidth != self.header.dwHeight:
-                qCritical(self.__tr("Cubemap faces must be square"))
+                qCritical(self.tr("Cubemap faces must be square"))
                 return None
         else:
             # Assume GL_TEXTURE_2D for now
@@ -202,5 +202,5 @@ class DDSFile:
 
         return texture
 
-    def __tr(self, str):
+    def tr(self, str):
         return QCoreApplication.translate("DDSFile", str)
