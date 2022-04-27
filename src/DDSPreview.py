@@ -335,7 +335,7 @@ class DDSPreview(mobase.IPluginPreview):
                 mobase.PluginSetting("background a", self.tr("Alpha channel of background colour"), 0)]
 
     def supportedExtensions(self):
-        return ["dds"]
+        return {"dds"}
 
     def genFilePreview(self, fileName, maxSize):
         ddsFile = DDSFile(fileName)
