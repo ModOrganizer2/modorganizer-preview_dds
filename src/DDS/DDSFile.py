@@ -83,7 +83,7 @@ class DDSFile:
     def getDescription(self):
         format = ""
         # DX10 header says the format enum
-        if self.dxt10Header != None:
+        if self.dxt10Header is not None:
             format = self.dxt10Header.dxgiFormat.name.replace("DXGI_FORMAT_", "")
         # Pixel Format says the FourCC
         elif self.header.ddspf.dwFlags & DDSDefinitions.DDS_PIXELFORMAT.Flags.DDPF_FOURCC:
@@ -181,7 +181,7 @@ class DDSFile:
                                                              len(self.data[faceIndex * mipCount + i]),
                                                              self.data[faceIndex * mipCount + i])
                         else:
-                            texture.setData(i, 0, ddsCubemapFaces[face], self.glFormat.format, self.glFormat.type,
+                            texture.setData(i, 0, ddsCubemapFaces[face], QOpenGLTexture.PixelFormat(self.glFormat.format), QOpenGLTexture.PixelType(self.glFormat.type),
                                             self.glFormat.converter(self.data[faceIndex * mipCount + i]))
                     faceIndex += 1
             if noDSA:
@@ -191,7 +191,8 @@ class DDSFile:
                 if self.glFormat.compressed:
                     texture.setCompressedData(i, 0, len(self.data[i]), self.data[i])
                 else:
-                    texture.setData(i, 0, self.glFormat.format, self.glFormat.type,
+
+                    texture.setData(i, 0, QOpenGLTexture.PixelFormat(self.glFormat.format), QOpenGLTexture.PixelType(self.glFormat.type),
                                     self.glFormat.converter(self.data[i]))
 
         texture.setWrapMode(QOpenGLTexture.WrapMode.ClampToEdge)
