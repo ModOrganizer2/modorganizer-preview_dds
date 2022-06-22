@@ -71,38 +71,53 @@
 <context>
     <name>DDSPreview</name>
     <message>
-        <location filename="DDSPreview.py" line="321"/>
+        <location filename="DDSPreview.py" line="325"/>
         <source>Lets you preview DDS files by actually uploading them to the GPU.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="DDSPreview.py" line="327"/>
+        <location filename="DDSPreview.py" line="331"/>
         <source>If enabled, log OpenGL errors and debug messages. May decrease performance.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="DDSPreview.py" line="328"/>
+        <location filename="DDSPreview.py" line="332"/>
         <source>Red channel of background colour</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="DDSPreview.py" line="329"/>
+        <location filename="DDSPreview.py" line="333"/>
         <source>Green channel of background colour</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="DDSPreview.py" line="330"/>
+        <location filename="DDSPreview.py" line="334"/>
         <source>Blue channel of background colour</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="DDSPreview.py" line="331"/>
+        <location filename="DDSPreview.py" line="335"/>
         <source>Alpha channel of background colour</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="DDSPreview.py" line="365"/>
+        <location filename="DDSPreview.py" line="336"/>
+        <source>If enabled, transparency will be displayed.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="DDSPreview.py" line="371"/>
         <source>Pick background colour</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="DDSPreview.py" line="388"/>
+        <source>Disable Transparency</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="DDSPreview.py" line="390"/>
+        <source>Enable Transparency</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
