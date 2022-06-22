@@ -153,9 +153,10 @@ glVersionProfile.setVersion(2, 1)
 
 
 class DDSWidget(QOpenGLWidget):
-    def __init__(self, ddsFile, debugContext=False, parent=None, flags=Qt.WindowType(0)):
+    def __init__(self, ddsPreview, ddsFile, debugContext=False, parent=None, flags=Qt.WindowType(0)):
         super(DDSWidget, self).__init__(parent, flags=flags)
 
+        self.ddsPreview = ddsPreview
         self.ddsFile = ddsFile
 
         self.clean = True
@@ -168,7 +169,6 @@ class DDSWidget(QOpenGLWidget):
         self.vbo = None
         self.vao = None
 
-        self.backgroundColour = None
 
         if debugContext:
             format = QSurfaceFormat()
@@ -256,8 +256,9 @@ class DDSWidget(QOpenGLWidget):
         # Draw checkerboard so transparency is obvious
         self.transparecyProgram.bind()
 
-        if self.backgroundColour and self.backgroundColour.isValid():
-            self.transparecyProgram.setUniformValue("backgroundColour", self.backgroundColour)
+        backgroundColour = self.ddsPreview.getBackgroundColour()
+        if backgroundColour and backgroundColour.isValid():
+            self.transparecyProgram.setUniformValue("backgroundColour", backgroundColour)
 
         gl.glDrawArrays(gl.GL_TRIANGLES, 0, 6)
 
@@ -268,8 +269,11 @@ class DDSWidget(QOpenGLWidget):
         if self.texture:
             self.texture.bind()
 
-        gl.glEnable(gl.GL_BLEND)
-        gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
+        if self.ddsPreview.getTransparency():
+            gl.glEnable(gl.GL_BLEND)
+            gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
+        else:
+            gl.glDisable(gl.GL_BLEND)
 
         gl.glDrawArrays(gl.GL_TRIANGLES, 0, 6)
 
@@ -294,12 +298,6 @@ class DDSWidget(QOpenGLWidget):
             self.doneCurrent()
             self.clean = True
 
-    def setBackgroundColour(self, colour):
-        self.backgroundColour = colour
-
-    def getBackgroundColour(self):
-        return self.backgroundColour
-
     def tr(self, str):
         return QCoreApplication.translate("DDSWidget", str)
 
@@ -313,6 +311,12 @@ class DDSPreview(mobase.IPluginPreview):
     def init(self, organizer):
         self.__organizer = organizer
         return True
+
+    def pluginSetting(self, name):
+        return self.__organizer.pluginSetting(self.name(), name)
+
+    def setPluginSetting(self, name, value):
+        self.__organizer.setPluginSetting(self.name(), name, value)
 
     def name(self):
         return "DDS Preview Plugin"
@@ -332,7 +336,8 @@ class DDSPreview(mobase.IPluginPreview):
                 mobase.PluginSetting("background r", self.tr("Red channel of background colour"), 0),
                 mobase.PluginSetting("background g", self.tr("Green channel of background colour"), 0),
                 mobase.PluginSetting("background b", self.tr("Blue channel of background colour"), 0),
-                mobase.PluginSetting("background a", self.tr("Alpha channel of background colour"), 0)]
+                mobase.PluginSetting("background a", self.tr("Alpha channel of background colour"), 0),
+                mobase.PluginSetting("transparency", self.tr("If enabled, transparency will be displayed."), True)]
 
     def supportedExtensions(self):
         return {"dds"}
@@ -347,10 +352,11 @@ class DDSPreview(mobase.IPluginPreview):
         layout.setColumnStretch(0, 1)
         layout.addWidget(self.__makeLabel(ddsFile), 1, 0, 1, 1)
 
-        ddsWidget = DDSWidget(ddsFile, self.__organizer.pluginSetting(self.name(), "log gl errors"))
-        layout.addWidget(ddsWidget, 0, 0, 1, 2)
+        ddsWidget = DDSWidget(self, ddsFile, self.__organizer.pluginSetting(self.name(), "log gl errors"))
+        layout.addWidget(ddsWidget, 0, 0, 1, 3)
 
-        layout.addWidget(self.__makeColourButton(ddsWidget), 1, 1, 1, 1)
+        layout.addWidget(self.__makeColourButton(ddsWidget), 1, 2, 1, 1)
+        layout.addWidget(self.__makeToggleTransparencyButton(ddsWidget), 1, 1, 1, 1)
 
         widget = QWidget()
         widget.setLayout(layout)
@@ -367,24 +373,40 @@ class DDSPreview(mobase.IPluginPreview):
 
     def __makeColourButton(self, ddsWidget):
         button = QPushButton(self.tr("Pick background colour"))
-        savedColour = QColor(self.__organizer.pluginSetting(self.name(), "background r"),
-                             self.__organizer.pluginSetting(self.name(), "background g"),
-                             self.__organizer.pluginSetting(self.name(), "background b"),
-                             self.__organizer.pluginSetting(self.name(), "background a"))
-        ddsWidget.setBackgroundColour(savedColour)
 
         def pickColour(unused):
-            newColour = QColorDialog.getColor(ddsWidget.getBackgroundColour(), button, "Background colour",
-                                              QColorDialog.ColorDialogOption.ShowAlphaChannel)
+            newColour = QColorDialog.getColor(self.getBackgroundColour(), button, "Background colour", QColorDialog.ColorDialogOption.ShowAlphaChannel)
             if newColour.isValid():
-                ddsWidget.setBackgroundColour(newColour)
-                self.__organizer.setPluginSetting(self.name(), "background r", newColour.red())
-                self.__organizer.setPluginSetting(self.name(), "background g", newColour.green())
-                self.__organizer.setPluginSetting(self.name(), "background b", newColour.blue())
-                self.__organizer.setPluginSetting(self.name(), "background a", newColour.alpha())
+                self.setPluginSetting("background r", newColour.red())
+                self.setPluginSetting("background g", newColour.green())
+                self.setPluginSetting("background b", newColour.blue())
+                self.setPluginSetting("background a", newColour.alpha())
+                ddsWidget.update()
 
         button.clicked.connect(pickColour)
         return button
+
+    def __makeToggleTransparencyButton(self, ddsWidget):
+        checkbox = QCheckBox("Disable Transparency")
+        checkbox.setChecked(not self.getTransparency())
+        checkbox.showEvent = lambda _: checkbox.setChecked(not self.getTransparency())
+        checkbox.setToolTip(self.tr("Some games use the alpha channel for other purposes such as specularity, so viewing textures with transparency "
+                                    "enabled makes them appear different than in the game."))
+
+        def toggleTransparency(unused):
+            transparency = not checkbox.isChecked()
+            self.setPluginSetting("transparency", transparency)
+            ddsWidget.update()
+
+        checkbox.stateChanged.connect(toggleTransparency)
+        return checkbox
+
+    def getBackgroundColour(self):
+        return QColor(self.pluginSetting("background r"), self.pluginSetting("background g"), self.pluginSetting("background b"),
+                      self.pluginSetting("background a"))
+
+    def getTransparency(self):
+        return self.pluginSetting("transparency")
 
 
 def createPlugin():
