@@ -1,10 +1,11 @@
 import struct
 import sys
 import threading
+import enum
 
 from PyQt5.QtCore import QCoreApplication, qDebug, Qt
-from PyQt5.QtGui import QColor, QOpenGLBuffer, QOpenGLContext, QOpenGLDebugLogger, QOpenGLShader, QOpenGLShaderProgram, QOpenGLTexture, QOpenGLVersionProfile, QOpenGLVertexArrayObject, QSurfaceFormat
-from PyQt5.QtWidgets import QCheckBox, QDialog, QGridLayout, QLabel, QOpenGLWidget, QPushButton, QWidget
+from PyQt5.QtGui import QColor, QOpenGLBuffer, QOpenGLContext, QOpenGLDebugLogger, QOpenGLShader, QOpenGLShaderProgram, QOpenGLVersionProfile, QOpenGLVertexArrayObject, QSurfaceFormat
+from PyQt5.QtWidgets import QColorDialog, QGridLayout, QLabel, QOpenGLWidget, QPushButton, QWidget, QComboBox 
 
 from DDS.DDSFile import DDSFile
 
@@ -146,17 +147,51 @@ vertices = [
 ]
 
 
+class ColourChannels(enum.Enum):
+    RGBA = "Colour and Alpha"
+    RGB = "Colour"
+    A = "Alpha"
+    R = "Red"
+    G = "Green"
+    B = "Blue"
+
+
+class DDSOptions:
+    def __init__(self, colour: QColor = QColor(0, 0, 0, 0), channels: ColourChannels = ColourChannels.RGBA):
+        self.backgroundColour = None
+        self.channels = None
+        self.setBackgroundColour(colour)
+        self.setChannels(channels)
+
+    def setBackgroundColour(self, colour: QColor):
+        if isinstance(colour, QColor) and colour.isValid():
+            self.backgroundColour = colour
+        else:
+            raise TypeError(str(colour) + " is not a valid QColor object.")
+
+    def getBackgroundColour(self) -> QColor:
+        return self.backgroundColour
+
+    def setChannels(self, channels: ColourChannels):
+        if isinstance(channels, ColourChannels):
+            self.channels = channels
+        else:
+            raise TypeError(str(channels) + " is not a valid ColourChannels object.")
+
+    def getChannels(self) -> ColourChannels:
+        return self.channels
+
 
 glVersionProfile = QOpenGLVersionProfile()
 glVersionProfile.setVersion(2, 1)
 
 class DDSWidget(QOpenGLWidget):
-    def __init__(self, ddsPreview, ddsFile, debugContext = False, parent = None, f = Qt.WindowFlags()):
+    def __init__(self, ddsFile, ddsOptions = DDSOptions(), debugContext = False, parent = None, f = Qt.WindowFlags()):
         super(DDSWidget, self).__init__(parent, f)
 
-        self.ddsPreview = ddsPreview
-
         self.ddsFile = ddsFile
+
+        self.ddsOptions = ddsOptions
         
         self.clean = True
         
@@ -253,7 +288,7 @@ class DDSWidget(QOpenGLWidget):
         # Draw checkerboard so transparency is obvious
         self.transparecyProgram.bind()
 
-        backgroundColour = self.ddsPreview.getBackgroundColour()
+        backgroundColour = self.ddsOptions.getBackgroundColour()
         if backgroundColour and backgroundColour.isValid():
             self.transparecyProgram.setUniformValue("backgroundColour", backgroundColour)
         
@@ -266,11 +301,35 @@ class DDSWidget(QOpenGLWidget):
         if self.texture:
             self.texture.bind()
 
-        if self.ddsPreview.getTransparency():
-            gl.glEnable(gl.GL_BLEND)
-            gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
+        gl.glEnable(gl.GL_BLEND)
+        gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
+
+        def drawColour(alpha):
+            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_SWIZZLE_R, gl.GL_RED)
+            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_SWIZZLE_G, gl.GL_GREEN)
+            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_SWIZZLE_B, gl.GL_BLUE)
+            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_SWIZZLE_A, alpha)
+
+        def drawGrayscale(channel):
+            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_SWIZZLE_R, channel)
+            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_SWIZZLE_G, channel)
+            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_SWIZZLE_B, channel)
+            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_SWIZZLE_A, gl.GL_ONE)
+
+        if self.ddsOptions.getChannels() == ColourChannels.RGBA:
+            drawColour(gl.GL_ALPHA)
+        elif self.ddsOptions.getChannels() == ColourChannels.RGB:
+            drawColour(gl.GL_ONE)
+        elif self.ddsOptions.getChannels() == ColourChannels.R:
+            drawGrayscale(gl.GL_RED)
+        elif self.ddsOptions.getChannels() == ColourChannels.G:
+            drawGrayscale(gl.GL_GREEN)
+        elif self.ddsOptions.getChannels() == ColourChannels.B:
+            drawGrayscale(gl.GL_BLUE)
+        elif self.ddsOptions.getChannels() == ColourChannels.A:
+            drawGrayscale(gl.GL_ALPHA)
         else:
-            gl.glDisable(gl.GL_BLEND)
+            drawGrayscale(gl.GL_ZERO)
         
         gl.glDrawArrays(gl.GL_TRIANGLES, 0, 6)
         
@@ -304,9 +363,16 @@ class DDSPreview(mobase.IPluginPreview):
     def __init__(self):
         super().__init__()
         self.__organizer = None
+        self.options = None
 
     def init(self, organizer):
         self.__organizer = organizer
+        savedColour = QColor(self.pluginSetting("background r"), self.pluginSetting("background g"), self.pluginSetting("background b"), self.pluginSetting("background a"))
+        try:
+            savedChannels = ColourChannels[self.pluginSetting("channels")]
+        except KeyError:
+            savedChannels = ColourChannels.RGBA
+        self.options = DDSOptions(savedColour, savedChannels)
         return True
 
     def pluginSetting(self, name):
@@ -333,7 +399,7 @@ class DDSPreview(mobase.IPluginPreview):
                 mobase.PluginSetting("background g", self.__tr("Green channel of background colour"), 0),
                 mobase.PluginSetting("background b", self.__tr("Blue channel of background colour"), 0),
                 mobase.PluginSetting("background a", self.__tr("Alpha channel of background colour"), 0),
-                mobase.PluginSetting("transparency", self.__tr("If enabled, transparency will be displayed."), True)]
+                mobase.PluginSetting("channels", self.__tr("The colour channels that are displayed."), ColourChannels.RGBA.name)]
     
     def supportedExtensions(self):
         return ["dds"]
@@ -348,11 +414,11 @@ class DDSPreview(mobase.IPluginPreview):
         layout.setColumnStretch(0, 1)
         layout.addWidget(self.__makeLabel(ddsFile), 1, 0, 1, 1)
 
-        ddsWidget = DDSWidget(self, ddsFile, self.__organizer.pluginSetting(self.name(), "log gl errors"))
+        ddsWidget = DDSWidget(ddsFile, self.options, self.__organizer.pluginSetting(self.name(), "log gl errors"))
         layout.addWidget(ddsWidget, 0, 0, 1, 3)
 
         layout.addWidget(self.__makeColourButton(ddsWidget), 1, 2, 1, 1)
-        layout.addWidget(self.__makeToggleTransparencyButton(ddsWidget), 1, 1, 1, 1)
+        layout.addWidget(self.__makeChannelsButton(ddsWidget), 1, 1, 1, 1)
 
         widget = QWidget()
         widget.setLayout(layout)
@@ -371,42 +437,35 @@ class DDSPreview(mobase.IPluginPreview):
         button = QPushButton(self.__tr("Pick background colour"))
 
         def pickColour(unused):
-            newColour = QColorDialog.getColor(self.getBackgroundColour(), button, "Background colour", QColorDialog.ShowAlphaChannel)
+            newColour = QColorDialog.getColor(self.options.getBackgroundColour(), button, "Background colour", QColorDialog.ShowAlphaChannel)
             if newColour.isValid():
                 self.setPluginSetting("background r", newColour.red())
                 self.setPluginSetting("background g", newColour.green())
                 self.setPluginSetting("background b", newColour.blue())
                 self.setPluginSetting("background a", newColour.alpha())
+                self.options.setBackgroundColour(newColour)
                 ddsWidget.update()
         
         button.clicked.connect(pickColour)
         return button
 
-    def __makeToggleTransparencyButton(self, ddsWidget):
-        def getButtonText():
-            if self.getTransparency():
-                return self.__tr("Disable Transparency")
-            else:
-                return self.__tr("Enable Transparency")
+    def __makeChannelsButton(self, ddsWidget):
+        listwidget = QComboBox()
+        channelKeys = [e.name for e in ColourChannels]
+        channelNames = [e.value for e in ColourChannels]
+        
+        listwidget.addItems(channelNames)
+        listwidget.setCurrentText(self.options.channels.value)
+        listwidget.setToolTip(self.__tr("Change which channels are displayed."))
 
-        button = QPushButton(getButtonText())
-        # Since every conflicting mod gets its own button, the text needs to be updated when the page is changed.
-        button.showEvent = lambda _: button.setText(getButtonText())
-
-        def toggleTransparency(unused):
-            transparency = not self.getTransparency()
-            self.setPluginSetting("transparency", transparency)
+        listwidget.showEvent = lambda _: listwidget.setCurrentText(self.options.channels.value)
+        def onChanged(newIndex):
+            self.options.channels = ColourChannels[channelKeys[newIndex]]
+            self.setPluginSetting("channels", self.options.channels.name)
             ddsWidget.update()
-            button.setText(getButtonText())
 
-        button.clicked.connect(toggleTransparency)
-        return button
-
-    def getBackgroundColour(self):
-        return QColor(self.pluginSetting("background r"), self.pluginSetting("background g"), self.pluginSetting("background b"), self.pluginSetting("background a"))
-
-    def getTransparency(self):
-        return self.pluginSetting("transparency")
+        listwidget.currentIndexChanged.connect(onChanged)
+        return listwidget
     
 def createPlugin():
     return DDSPreview()

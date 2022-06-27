@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE TS><TS version="2.0">
+<!DOCTYPE TS>
+<TS version="2.1">
 <context>
     <name>DDSFile</name>
     <message>
@@ -71,60 +72,55 @@
 <context>
     <name>DDSPreview</name>
     <message>
-        <location filename="DDSPreview.py" line="325"/>
+        <location filename="DDSPreview.py" line="391"/>
         <source>Lets you preview DDS files by actually uploading them to the GPU.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="DDSPreview.py" line="331"/>
+        <location filename="DDSPreview.py" line="397"/>
         <source>If enabled, log OpenGL errors and debug messages. May decrease performance.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="DDSPreview.py" line="332"/>
+        <location filename="DDSPreview.py" line="398"/>
         <source>Red channel of background colour</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="DDSPreview.py" line="333"/>
+        <location filename="DDSPreview.py" line="399"/>
         <source>Green channel of background colour</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="DDSPreview.py" line="334"/>
+        <location filename="DDSPreview.py" line="400"/>
         <source>Blue channel of background colour</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="DDSPreview.py" line="335"/>
+        <location filename="DDSPreview.py" line="401"/>
         <source>Alpha channel of background colour</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="DDSPreview.py" line="336"/>
-        <source>If enabled, transparency will be displayed.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="DDSPreview.py" line="371"/>
+        <location filename="DDSPreview.py" line="437"/>
         <source>Pick background colour</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="DDSPreview.py" line="388"/>
-        <source>Disable Transparency</source>
+        <location filename="DDSPreview.py" line="402"/>
+        <source>The colour channels that are displayed.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="DDSPreview.py" line="390"/>
-        <source>Enable Transparency</source>
+        <location filename="DDSPreview.py" line="459"/>
+        <source>Change which channels are displayed.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>DDSWidget</name>
     <message>
-        <location filename="DDSPreview.py" line="186"/>
+        <location filename="DDSPreview.py" line="221"/>
         <source>OpenGL debug message: {0}</source>
         <translation type="unfinished"></translation>
     </message>
