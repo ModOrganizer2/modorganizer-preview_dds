@@ -2,9 +2,10 @@ import struct
 import sys
 import threading
 import enum
+from typing import Iterable
 
 from PyQt5.QtCore import QCoreApplication, qDebug, Qt
-from PyQt5.QtGui import QColor, QOpenGLBuffer, QOpenGLContext, QOpenGLDebugLogger, QOpenGLShader, QOpenGLShaderProgram, QOpenGLVersionProfile, QOpenGLVertexArrayObject, QSurfaceFormat
+from PyQt5.QtGui import QColor, QOpenGLBuffer, QOpenGLContext, QOpenGLDebugLogger, QOpenGLShader, QOpenGLShaderProgram, QOpenGLVersionProfile, QOpenGLVertexArrayObject, QSurfaceFormat, QMatrix4x4, QVector4D
 from PyQt5.QtWidgets import QColorDialog, QGridLayout, QLabel, QOpenGLWidget, QPushButton, QWidget, QComboBox 
 
 from DDS.DDSFile import DDSFile
@@ -54,12 +55,14 @@ fragmentShaderFloat = """
 #version 150
 
 uniform sampler2D aTexture;
+uniform mat4 channelMatrix;
+uniform vec4 channelOffset;
 
 in vec2 texCoord;
 
 void main()
 {
-    gl_FragData[0] = texture(aTexture, texCoord);
+    gl_FragData[0] = channelMatrix *  texture(aTexture, texCoord) + channelOffset;
 }
 """
 
@@ -67,13 +70,15 @@ fragmentShaderUInt = """
 #version 150
 
 uniform usampler2D aTexture;
+uniform mat4 channelMatrix;
+uniform vec4 channelOffset;
 
 in vec2 texCoord;
 
 void main()
 {
     // autofilled alpha is 1, so if we have a scaling factor, we need separate ones for luminance and alpha
-    gl_FragData[0] = texture(aTexture, texCoord);
+    gl_FragData[0] = channelMatrix * texture(aTexture, texCoord) + channelOffset;
 }
 """
 
@@ -81,13 +86,15 @@ fragmentShaderSInt = """
 #version 150
 
 uniform isampler2D aTexture;
+uniform mat4 channelMatrix;
+uniform vec4 channelOffset;
 
 in vec2 texCoord;
 
 void main()
 {
     // autofilled alpha is 1, so if we have a scaling factor and offset, we need separate ones for luminance and alpha
-    gl_FragData[0] = texture(aTexture, texCoord);
+    gl_FragData[0] = channelMatrix * texture(aTexture, texCoord) + channelOffset;
 }
 """
 
@@ -95,6 +102,8 @@ fragmentShaderCube = """
 #version 150
 
 uniform samplerCube aTexture;
+uniform mat4 channelMatrix;
+uniform vec4 channelOffset;
 
 in vec2 texCoord;
 
@@ -104,7 +113,7 @@ void main()
 {
     float theta = -2.0 * PI * texCoord.x;
     float phi = PI * texCoord.y;
-    gl_FragData[0] = texture(aTexture, vec3(sin(theta) * sin(phi), cos(theta) * sin(phi), cos(phi)));
+    gl_FragData[0] = channelMatrix * texture(aTexture, vec3(sin(theta) * sin(phi), cos(theta) * sin(phi), cos(phi))) + channelOffset;
 }
 """
 
@@ -146,22 +155,17 @@ vertices = [
      1.0, -1.0, 0.5, 1.0,       1.0, 1.0,
 ]
 
-
-class ColourChannels(enum.Enum):
-    RGBA = "Colour and Alpha"
-    RGB = "Colour"
-    A = "Alpha"
-    R = "Red"
-    G = "Green"
-    B = "Blue"
-
-
 class DDSOptions:
-    def __init__(self, colour: QColor = QColor(0, 0, 0, 0), channels: ColourChannels = ColourChannels.RGBA):
+    def __init__(self, colour: QColor = QColor(0, 0, 0, 0), channelMatrix: QMatrix4x4 = QMatrix4x4(), channelOffset: QVector4D = QVector4D()):
+        # QMatrix4x4 with no arguments is the identity matrix, so no channel transformations
+        # declare member variables with None values
         self.backgroundColour = None
-        self.channels = None
+        self.channelMatrix = None
+        self.channelOffset = None
+        # initialize member variables with error checks
         self.setBackgroundColour(colour)
-        self.setChannels(channels)
+        self.setChannelMatrix(channelMatrix)
+        self.setChannelOffset(channelOffset)
 
     def setBackgroundColour(self, colour: QColor):
         if isinstance(colour, QColor) and colour.isValid():
@@ -172,14 +176,44 @@ class DDSOptions:
     def getBackgroundColour(self) -> QColor:
         return self.backgroundColour
 
-    def setChannels(self, channels: ColourChannels):
-        if isinstance(channels, ColourChannels):
-            self.channels = channels
-        else:
-            raise TypeError(str(channels) + " is not a valid ColourChannels object.")
+    def getChannelMatrix(self) -> QMatrix4x4:
+        return self.channelMatrix
 
-    def getChannels(self) -> ColourChannels:
-        return self.channels
+    def setChannelMatrix(self, matrix):
+
+        def flattenList(lst: Iterable):
+            tmp = []
+            for e in lst:
+                if isinstance(e, Iterable):
+                    tmp += flattenList(e)
+                elif isinstance(e, (int, float)):
+                    tmp += [float(e)]
+                else:
+                    raise ValueError("Can only set a matrix with numbers.")
+            return tmp
+
+        if isinstance(matrix, Iterable):
+            flattened = flattenList(matrix)
+            if len(flattened) != 16:
+                raise ValueError("Must provide exactly 16 values.")
+            matrix = QMatrix4x4(flattened)
+
+        if isinstance(matrix, QMatrix4x4):
+            self.channelMatrix = matrix
+        else:
+            raise ValueError("Can only set a matrix with numbers.")
+
+    def getChannelOffset(self) -> QVector4D:
+        return self.channelOffset
+
+    def setChannelOffset(self, vector):
+        if isinstance(vector, Iterable):
+            vector = list(vector)
+            if len(vector) != 4:
+                raise ValueError("Must provide exactly 4 values.")
+            vector = QVector4D(vector[0], vector[1], vector[2], vector[3])
+        self.channelOffset = vector
+
 
 
 glVersionProfile = QOpenGLVersionProfile()
@@ -304,32 +338,8 @@ class DDSWidget(QOpenGLWidget):
         gl.glEnable(gl.GL_BLEND)
         gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
 
-        def drawColour(alpha):
-            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_SWIZZLE_R, gl.GL_RED)
-            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_SWIZZLE_G, gl.GL_GREEN)
-            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_SWIZZLE_B, gl.GL_BLUE)
-            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_SWIZZLE_A, alpha)
-
-        def drawGrayscale(channel):
-            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_SWIZZLE_R, channel)
-            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_SWIZZLE_G, channel)
-            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_SWIZZLE_B, channel)
-            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_SWIZZLE_A, gl.GL_ONE)
-
-        if self.ddsOptions.getChannels() == ColourChannels.RGBA:
-            drawColour(gl.GL_ALPHA)
-        elif self.ddsOptions.getChannels() == ColourChannels.RGB:
-            drawColour(gl.GL_ONE)
-        elif self.ddsOptions.getChannels() == ColourChannels.R:
-            drawGrayscale(gl.GL_RED)
-        elif self.ddsOptions.getChannels() == ColourChannels.G:
-            drawGrayscale(gl.GL_GREEN)
-        elif self.ddsOptions.getChannels() == ColourChannels.B:
-            drawGrayscale(gl.GL_BLUE)
-        elif self.ddsOptions.getChannels() == ColourChannels.A:
-            drawGrayscale(gl.GL_ALPHA)
-        else:
-            drawGrayscale(gl.GL_ZERO)
+        self.program.setUniformValue("channelMatrix", self.ddsOptions.getChannelMatrix())
+        self.program.setUniformValue("channelOffset", self.ddsOptions.getChannelOffset())
         
         gl.glDrawArrays(gl.GL_TRIANGLES, 0, 6)
         
@@ -358,12 +368,63 @@ class DDSWidget(QOpenGLWidget):
         return QCoreApplication.translate("DDSWidget", str)
 
 
+class ColourChannels(enum.Enum):
+    RGBA = "Colour and Alpha"
+    RGB = "Colour"
+    A = "Alpha"
+    R = "Red"
+    G = "Green"
+    B = "Blue"
+
+
+class DDSChannelManager:
+    def __init__(self, channels: ColourChannels):
+        self.channels = channels
+
+    def setChannels(self, options: DDSOptions, channels: ColourChannels):
+        self.channels = channels
+        def drawColour(alpha: bool):
+            colorMatrix = QMatrix4x4()
+            colorOffset = QVector4D()
+            if not alpha:
+                colorMatrix[3, 3] = 0
+                colorOffset.setW(1.0)
+            options.setChannelMatrix(colorMatrix)
+            options.setChannelOffset(colorOffset)
+
+        def drawGrayscale(channel: ColourChannels):
+            colorOffset = QVector4D(0, 0, 0, 1)
+            channelVector = [0, 0, 0, 0]
+            if channels == ColourChannels.R:
+                channelVector[0] = 1
+            elif channel == ColourChannels.G:
+                channelVector[1] = 1
+            elif channel == ColourChannels.B:
+                channelVector[2] = 1
+            elif channels == ColourChannels.A:
+                channelVector[3] = 1
+            else:
+                raise ValueError("channel must be a single color channel.")
+            alphaVector = [0, 0, 0, 0]
+            colorMatrix = channelVector * 3 + alphaVector
+            options.setChannelMatrix(colorMatrix)
+            options.setChannelOffset(colorOffset)
+
+        if channels == ColourChannels.RGBA:
+            drawColour(True)
+        elif channels == ColourChannels.RGB:
+            drawColour(False)
+        else:
+            drawGrayscale(channels)
+
+
 class DDSPreview(mobase.IPluginPreview):
     
     def __init__(self):
         super().__init__()
         self.__organizer = None
         self.options = None
+        self.channelManager = None
 
     def init(self, organizer):
         self.__organizer = organizer
@@ -372,7 +433,9 @@ class DDSPreview(mobase.IPluginPreview):
             savedChannels = ColourChannels[self.pluginSetting("channels")]
         except KeyError:
             savedChannels = ColourChannels.RGBA
-        self.options = DDSOptions(savedColour, savedChannels)
+        self.options = DDSOptions(savedColour)
+        self.channelManager = DDSChannelManager(savedChannels)
+        self.channelManager.setChannels(self.options, savedChannels)
         return True
 
     def pluginSetting(self, name):
@@ -455,13 +518,13 @@ class DDSPreview(mobase.IPluginPreview):
         channelNames = [e.value for e in ColourChannels]
         
         listwidget.addItems(channelNames)
-        listwidget.setCurrentText(self.options.channels.value)
+        listwidget.setCurrentText(self.channelManager.channels.value)
         listwidget.setToolTip(self.__tr("Change which channels are displayed."))
 
-        listwidget.showEvent = lambda _: listwidget.setCurrentText(self.options.channels.value)
+        listwidget.showEvent = lambda _: listwidget.setCurrentText(self.channelManager.channels.value)
         def onChanged(newIndex):
-            self.options.channels = ColourChannels[channelKeys[newIndex]]
-            self.setPluginSetting("channels", self.options.channels.name)
+            self.channelManager.setChannels(self.options, ColourChannels[channelKeys[newIndex]])
+            self.setPluginSetting("channels", self.channelManager.channels.name)
             ddsWidget.update()
 
         listwidget.currentIndexChanged.connect(onChanged)
