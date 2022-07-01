@@ -180,40 +180,13 @@ class DDSOptions:
         return self.channelMatrix
 
     def setChannelMatrix(self, matrix):
-
-        def flattenList(lst: Iterable):
-            tmp = []
-            for e in lst:
-                if isinstance(e, Iterable):
-                    tmp += flattenList(e)
-                elif isinstance(e, (int, float)):
-                    tmp += [float(e)]
-                else:
-                    raise ValueError("Can only set a matrix with numbers.")
-            return tmp
-
-        if isinstance(matrix, Iterable):
-            flattened = flattenList(matrix)
-            if len(flattened) != 16:
-                raise ValueError("Must provide exactly 16 values.")
-            matrix = QMatrix4x4(flattened)
-
-        if isinstance(matrix, QMatrix4x4):
-            self.channelMatrix = matrix
-        else:
-            raise ValueError("Can only set a matrix with numbers.")
+        self.channelMatrix = QMatrix4x4(matrix)
 
     def getChannelOffset(self) -> QVector4D:
         return self.channelOffset
 
     def setChannelOffset(self, vector):
-        if isinstance(vector, Iterable):
-            vector = list(vector)
-            if len(vector) != 4:
-                raise ValueError("Must provide exactly 4 values.")
-            vector = QVector4D(vector[0], vector[1], vector[2], vector[3])
-        self.channelOffset = vector
-
+        self.channelOffset = QVector4D(vector)
 
 
 glVersionProfile = QOpenGLVersionProfile()

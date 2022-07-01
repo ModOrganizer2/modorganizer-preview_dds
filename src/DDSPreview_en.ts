@@ -72,47 +72,47 @@
 <context>
     <name>DDSPreview</name>
     <message>
-        <location filename="DDSPreview.py" line="391"/>
+        <location filename="DDSPreview.py" line="427"/>
         <source>Lets you preview DDS files by actually uploading them to the GPU.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="DDSPreview.py" line="397"/>
+        <location filename="DDSPreview.py" line="433"/>
         <source>If enabled, log OpenGL errors and debug messages. May decrease performance.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="DDSPreview.py" line="398"/>
+        <location filename="DDSPreview.py" line="434"/>
         <source>Red channel of background colour</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="DDSPreview.py" line="399"/>
+        <location filename="DDSPreview.py" line="435"/>
         <source>Green channel of background colour</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="DDSPreview.py" line="400"/>
+        <location filename="DDSPreview.py" line="436"/>
         <source>Blue channel of background colour</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="DDSPreview.py" line="401"/>
+        <location filename="DDSPreview.py" line="437"/>
         <source>Alpha channel of background colour</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="DDSPreview.py" line="437"/>
+        <location filename="DDSPreview.py" line="473"/>
         <source>Pick background colour</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="DDSPreview.py" line="402"/>
+        <location filename="DDSPreview.py" line="438"/>
         <source>The colour channels that are displayed.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="DDSPreview.py" line="459"/>
+        <location filename="DDSPreview.py" line="495"/>
         <source>Change which channels are displayed.</source>
         <translation type="unfinished"></translation>
     </message>
@@ -120,7 +120,7 @@
 <context>
     <name>DDSWidget</name>
     <message>
-        <location filename="DDSPreview.py" line="221"/>
+        <location filename="DDSPreview.py" line="228"/>
         <source>OpenGL debug message: {0}</source>
         <translation type="unfinished"></translation>
     </message>
