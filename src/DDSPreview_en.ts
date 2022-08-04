@@ -72,55 +72,55 @@
   <context>
     <name>DDSPreview</name>
     <message>
-      <location filename="DDSPreview.py" line="328" />
+      <location filename="DDSPreview.py" line="436" />
       <source>Lets you preview DDS files by actually uploading them to the GPU.</source>
       <translation type="unfinished" />
     </message>
     <message>
-      <location filename="DDSPreview.py" line="334" />
+      <location filename="DDSPreview.py" line="442" />
       <source>If enabled, log OpenGL errors and debug messages. May decrease performance.</source>
       <translation type="unfinished" />
     </message>
     <message>
-      <location filename="DDSPreview.py" line="336" />
+      <location filename="DDSPreview.py" line="444" />
       <source>Red channel of background colour</source>
       <translation type="unfinished" />
     </message>
     <message>
-      <location filename="DDSPreview.py" line="337" />
+      <location filename="DDSPreview.py" line="445" />
       <source>Green channel of background colour</source>
       <translation type="unfinished" />
     </message>
     <message>
-      <location filename="DDSPreview.py" line="338" />
+      <location filename="DDSPreview.py" line="446" />
       <source>Blue channel of background colour</source>
       <translation type="unfinished" />
     </message>
     <message>
-      <location filename="DDSPreview.py" line="339" />
+      <location filename="DDSPreview.py" line="447" />
       <source>Alpha channel of background colour</source>
       <translation type="unfinished" />
     </message>
     <message>
-      <location filename="DDSPreview.py" line="340" />
-      <source>If enabled, transparency will be displayed.</source>
+      <location filename="DDSPreview.py" line="448" />
+      <source>The colour channels that are displayed.</source>
       <translation type="unfinished" />
     </message>
     <message>
-      <location filename="DDSPreview.py" line="375" />
+      <location filename="DDSPreview.py" line="484" />
       <source>Pick background colour</source>
       <translation type="unfinished" />
     </message>
     <message>
-      <location filename="DDSPreview.py" line="393" />
-      <source>Some games use the alpha channel for other purposes such as specularity, so viewing textures with transparency enabled makes them appear different than in the game.</source>
+      <location filename="DDSPreview.py" line="507" />
+      <source>Select what colour channels are displayed.</source>
       <translation type="unfinished" />
     </message>
   </context>
   <context>
     <name>DDSWidget</name>
     <message>
-      <location filename="DDSPreview.py" line="189" />
+      <location filename="DDSPreview.py" line="235" />
       <source>OpenGL debug message: {0}</source>
       <translation type="unfinished" />
     </message>
