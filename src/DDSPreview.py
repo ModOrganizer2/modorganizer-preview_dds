@@ -1,11 +1,12 @@
 import struct
 import sys
 import threading
+import enum
 
 from PyQt6.QtCore import QCoreApplication, qDebug, Qt
-from PyQt6.QtGui import QColor, QOpenGLContext, QSurfaceFormat, QWindow
+from PyQt6.QtGui import QColor, QOpenGLContext, QSurfaceFormat, QWindow, QMatrix4x4, QVector4D
 from PyQt6.QtOpenGLWidgets import QOpenGLWidget
-from PyQt6.QtWidgets import QCheckBox, QDialog, QGridLayout, QLabel, QPushButton, QWidget, QColorDialog
+from PyQt6.QtWidgets import QCheckBox, QDialog, QGridLayout, QLabel, QPushButton, QWidget, QColorDialog, QComboBox
 from PyQt6.QtOpenGL import QOpenGLBuffer, QOpenGLDebugLogger, QOpenGLShader, QOpenGLShaderProgram, QOpenGLTexture, \
     QOpenGLVersionProfile, QOpenGLVertexArrayObject, QOpenGLFunctions_4_1_Core, QOpenGLVersionFunctionsFactory
 
@@ -56,12 +57,14 @@ fragmentShaderFloat = """
 #version 150
 
 uniform sampler2D aTexture;
+uniform mat4 channelMatrix;
+uniform vec4 channelOffset;
 
 in vec2 texCoord;
 
 void main()
 {
-    gl_FragData[0] = texture(aTexture, texCoord);
+    gl_FragData[0] = channelMatrix *  texture(aTexture, texCoord) + channelOffset;
 }
 """
 
@@ -69,13 +72,15 @@ fragmentShaderUInt = """
 #version 150
 
 uniform usampler2D aTexture;
+uniform mat4 channelMatrix;
+uniform vec4 channelOffset;
 
 in vec2 texCoord;
 
 void main()
 {
     // autofilled alpha is 1, so if we have a scaling factor, we need separate ones for luminance and alpha
-    gl_FragData[0] = texture(aTexture, texCoord);
+    gl_FragData[0] = channelMatrix * texture(aTexture, texCoord) + channelOffset;
 }
 """
 
@@ -83,13 +88,15 @@ fragmentShaderSInt = """
 #version 150
 
 uniform isampler2D aTexture;
+uniform mat4 channelMatrix;
+uniform vec4 channelOffset;
 
 in vec2 texCoord;
 
 void main()
 {
     // autofilled alpha is 1, so if we have a scaling factor and offset, we need separate ones for luminance and alpha
-    gl_FragData[0] = texture(aTexture, texCoord);
+    gl_FragData[0] = channelMatrix * texture(aTexture, texCoord) + channelOffset;
 }
 """
 
@@ -97,6 +104,8 @@ fragmentShaderCube = """
 #version 150
 
 uniform samplerCube aTexture;
+uniform mat4 channelMatrix;
+uniform vec4 channelOffset;
 
 in vec2 texCoord;
 
@@ -106,7 +115,7 @@ void main()
 {
     float theta = -2.0 * PI * texCoord.x;
     float phi = PI * texCoord.y;
-    gl_FragData[0] = texture(aTexture, vec3(sin(theta) * sin(phi), cos(theta) * sin(phi), cos(phi)));
+    gl_FragData[0] = channelMatrix * texture(aTexture, vec3(sin(theta) * sin(phi), cos(theta) * sin(phi), cos(phi))) + channelOffset;
 }
 """
 
@@ -148,15 +157,53 @@ vertices = [
     1.0, -1.0, 0.5, 1.0, 1.0, 1.0,
 ]
 
+
+class DDSOptions:
+    def __init__(self, colour: QColor = QColor(0, 0, 0, 0), channelMatrix: QMatrix4x4 = QMatrix4x4(),
+                 channelOffset: QVector4D = QVector4D()):
+        # QMatrix4x4 with no arguments is the identity matrix, so no channel transformations
+        # declare member variables with None values
+        self.backgroundColour = None
+        self.channelMatrix = None
+        self.channelOffset = None
+        # initialize member variables with error checks
+        self.setBackgroundColour(colour)
+        self.setChannelMatrix(channelMatrix)
+        self.setChannelOffset(channelOffset)
+
+    def setBackgroundColour(self, colour: QColor):
+        if isinstance(colour, QColor) and colour.isValid():
+            self.backgroundColour = colour
+        else:
+            raise TypeError(str(colour) + " is not a valid QColor object.")
+
+    def getBackgroundColour(self) -> QColor:
+        return self.backgroundColour
+
+    def getChannelMatrix(self) -> QMatrix4x4:
+        return self.channelMatrix
+
+    def setChannelMatrix(self, matrix):
+        self.channelMatrix = QMatrix4x4(matrix)
+
+    def getChannelOffset(self) -> QVector4D:
+        return self.channelOffset
+
+    def setChannelOffset(self, vector):
+        self.channelOffset = QVector4D(vector)
+
+
 glVersionProfile = QOpenGLVersionProfile()
 glVersionProfile.setVersion(2, 1)
 
 
 class DDSWidget(QOpenGLWidget):
-    def __init__(self, ddsFile, debugContext=False, parent=None, flags=Qt.WindowType(0)):
-        super(DDSWidget, self).__init__(parent, flags=flags)
+    def __init__(self, ddsFile, ddsOptions=DDSOptions(), debugContext=False, parent=None, f=Qt.WindowType(0)):
+        super(DDSWidget, self).__init__(parent, f)
 
         self.ddsFile = ddsFile
+
+        self.ddsOptions = ddsOptions
 
         self.clean = True
 
@@ -168,7 +215,6 @@ class DDSWidget(QOpenGLWidget):
         self.vbo = None
         self.vao = None
 
-        self.backgroundColour = None
 
         if debugContext:
             format = QSurfaceFormat()
@@ -186,7 +232,7 @@ class DDSWidget(QOpenGLWidget):
         if self.logger:
             self.logger.initialize()
             self.logger.messageLogged.connect(
-                lambda message: qDebug(self.tr("OpenGL debug message: {0}").fomat(message.message())))
+                lambda message: qDebug(self.tr("OpenGL debug message: {0}").format(message.message())))
             self.logger.startLogging()
 
         gl = QOpenGLVersionFunctionsFactory.get(glVersionProfile)
@@ -256,8 +302,9 @@ class DDSWidget(QOpenGLWidget):
         # Draw checkerboard so transparency is obvious
         self.transparecyProgram.bind()
 
-        if self.backgroundColour and self.backgroundColour.isValid():
-            self.transparecyProgram.setUniformValue("backgroundColour", self.backgroundColour)
+        backgroundColour = self.ddsOptions.getBackgroundColour()
+        if backgroundColour and backgroundColour.isValid():
+            self.transparecyProgram.setUniformValue("backgroundColour", backgroundColour)
 
         gl.glDrawArrays(gl.GL_TRIANGLES, 0, 6)
 
@@ -270,6 +317,9 @@ class DDSWidget(QOpenGLWidget):
 
         gl.glEnable(gl.GL_BLEND)
         gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
+
+        self.program.setUniformValue("channelMatrix", self.ddsOptions.getChannelMatrix())
+        self.program.setUniformValue("channelOffset", self.ddsOptions.getChannelOffset())
 
         gl.glDrawArrays(gl.GL_TRIANGLES, 0, 6)
 
@@ -294,14 +344,59 @@ class DDSWidget(QOpenGLWidget):
             self.doneCurrent()
             self.clean = True
 
-    def setBackgroundColour(self, colour):
-        self.backgroundColour = colour
-
-    def getBackgroundColour(self):
-        return self.backgroundColour
-
     def tr(self, str):
         return QCoreApplication.translate("DDSWidget", str)
+
+
+class ColourChannels(enum.Enum):
+    RGBA = "Colour and Alpha"
+    RGB = "Colour"
+    A = "Alpha"
+    R = "Red"
+    G = "Green"
+    B = "Blue"
+
+
+class DDSChannelManager:
+    def __init__(self, channels: ColourChannels):
+        self.channels = channels
+
+    def setChannels(self, options: DDSOptions, channels: ColourChannels):
+        self.channels = channels
+
+        def drawColour(alpha: bool):
+            colorMatrix = QMatrix4x4()
+            colorOffset = QVector4D()
+            if not alpha:
+                colorMatrix[3, 3] = 0
+                colorOffset.setW(1.0)
+            options.setChannelMatrix(colorMatrix)
+            options.setChannelOffset(colorOffset)
+
+        def drawGrayscale(channel: ColourChannels):
+            colorOffset = QVector4D(0, 0, 0, 1)
+            channelVector = [0, 0, 0, 0]
+            if channels == ColourChannels.R:
+                channelVector[0] = 1
+            elif channel == ColourChannels.G:
+                channelVector[1] = 1
+            elif channel == ColourChannels.B:
+                channelVector[2] = 1
+            elif channels == ColourChannels.A:
+                channelVector[3] = 1
+            else:
+                raise ValueError("channel must be a single color channel.")
+            alphaVector = [0, 0, 0, 0]
+            colorMatrix = channelVector * 3 + alphaVector
+            options.setChannelMatrix(colorMatrix)
+            options.setChannelOffset(colorOffset)
+
+        if channels == ColourChannels.RGBA:
+            drawColour(True)
+        elif channels == ColourChannels.RGB:
+            drawColour(False)
+        else:
+            drawGrayscale(channels)
 
 
 class DDSPreview(mobase.IPluginPreview):
@@ -309,10 +404,27 @@ class DDSPreview(mobase.IPluginPreview):
     def __init__(self):
         super().__init__()
         self.__organizer = None
+        self.options = None
+        self.channelManager = None
 
     def init(self, organizer):
         self.__organizer = organizer
+        savedColour = QColor(self.pluginSetting("background r"), self.pluginSetting("background g"),
+                             self.pluginSetting("background b"), self.pluginSetting("background a"))
+        try:
+            savedChannels = ColourChannels[self.pluginSetting("channels")]
+        except KeyError:
+            savedChannels = ColourChannels.RGBA
+        self.options = DDSOptions(savedColour)
+        self.channelManager = DDSChannelManager(savedChannels)
+        self.channelManager.setChannels(self.options, savedChannels)
         return True
+
+    def pluginSetting(self, name):
+        return self.__organizer.pluginSetting(self.name(), name)
+
+    def setPluginSetting(self, name, value):
+        self.__organizer.setPluginSetting(self.name(), name, value)
 
     def name(self):
         return "DDS Preview Plugin"
@@ -332,7 +444,9 @@ class DDSPreview(mobase.IPluginPreview):
                 mobase.PluginSetting("background r", self.tr("Red channel of background colour"), 0),
                 mobase.PluginSetting("background g", self.tr("Green channel of background colour"), 0),
                 mobase.PluginSetting("background b", self.tr("Blue channel of background colour"), 0),
-                mobase.PluginSetting("background a", self.tr("Alpha channel of background colour"), 0)]
+                mobase.PluginSetting("background a", self.tr("Alpha channel of background colour"), 0),
+                mobase.PluginSetting("channels", self.tr("The colour channels that are displayed."),
+                                     ColourChannels.RGBA.name)]
 
     def supportedExtensions(self):
         return {"dds"}
@@ -347,10 +461,11 @@ class DDSPreview(mobase.IPluginPreview):
         layout.setColumnStretch(0, 1)
         layout.addWidget(self.__makeLabel(ddsFile), 1, 0, 1, 1)
 
-        ddsWidget = DDSWidget(ddsFile, self.__organizer.pluginSetting(self.name(), "log gl errors"))
-        layout.addWidget(ddsWidget, 0, 0, 1, 2)
+        ddsWidget = DDSWidget(ddsFile, self.options, self.__organizer.pluginSetting(self.name(), "log gl errors"))
+        layout.addWidget(ddsWidget, 0, 0, 1, 3)
 
-        layout.addWidget(self.__makeColourButton(ddsWidget), 1, 1, 1, 1)
+        layout.addWidget(self.__makeColourButton(ddsWidget), 1, 2, 1, 1)
+        layout.addWidget(self.__makeChannelsButton(ddsWidget), 1, 1, 1, 1)
 
         widget = QWidget()
         widget.setLayout(layout)
@@ -367,24 +482,39 @@ class DDSPreview(mobase.IPluginPreview):
 
     def __makeColourButton(self, ddsWidget):
         button = QPushButton(self.tr("Pick background colour"))
-        savedColour = QColor(self.__organizer.pluginSetting(self.name(), "background r"),
-                             self.__organizer.pluginSetting(self.name(), "background g"),
-                             self.__organizer.pluginSetting(self.name(), "background b"),
-                             self.__organizer.pluginSetting(self.name(), "background a"))
-        ddsWidget.setBackgroundColour(savedColour)
 
         def pickColour(unused):
-            newColour = QColorDialog.getColor(ddsWidget.getBackgroundColour(), button, "Background colour",
+            newColour = QColorDialog.getColor(self.options.getBackgroundColour(), button, "Background colour",
                                               QColorDialog.ColorDialogOption.ShowAlphaChannel)
             if newColour.isValid():
-                ddsWidget.setBackgroundColour(newColour)
-                self.__organizer.setPluginSetting(self.name(), "background r", newColour.red())
-                self.__organizer.setPluginSetting(self.name(), "background g", newColour.green())
-                self.__organizer.setPluginSetting(self.name(), "background b", newColour.blue())
-                self.__organizer.setPluginSetting(self.name(), "background a", newColour.alpha())
+                self.setPluginSetting("background r", newColour.red())
+                self.setPluginSetting("background g", newColour.green())
+                self.setPluginSetting("background b", newColour.blue())
+                self.setPluginSetting("background a", newColour.alpha())
+                self.options.setBackgroundColour(newColour)
+                ddsWidget.update()
 
         button.clicked.connect(pickColour)
         return button
+
+    def __makeChannelsButton(self, ddsWidget):
+        listwidget = QComboBox()
+        channelKeys = [e.name for e in ColourChannels]
+        channelNames = [e.value for e in ColourChannels]
+
+        listwidget.addItems(channelNames)
+        listwidget.setCurrentText(self.channelManager.channels.value)
+        listwidget.setToolTip(self.tr("Select what colour channels are displayed."))
+
+        listwidget.showEvent = lambda _: listwidget.setCurrentText(self.channelManager.channels.value)
+
+        def onChanged(newIndex):
+            self.channelManager.setChannels(self.options, ColourChannels[channelKeys[newIndex]])
+            self.setPluginSetting("channels", self.channelManager.channels.name)
+            ddsWidget.update()
+
+        listwidget.currentIndexChanged.connect(onChanged)
+        return listwidget
 
 
 def createPlugin():
