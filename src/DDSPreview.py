@@ -280,8 +280,8 @@ class DDSWidget(QOpenGLWidget):
 
         gl.glEnableVertexAttribArray(0)
         gl.glEnableVertexAttribArray(1)
-        gl.glVertexAttribPointer(0, 4, gl.GL_FLOAT, b'0', 6 * 4, 0)
-        gl.glVertexAttribPointer(1, 2, gl.GL_FLOAT, b'0', 6 * 4, 4 * 4)
+        gl.glVertexAttribPointer(0, 4, gl.GL_FLOAT, False, 6 * 4, 0)
+        gl.glVertexAttribPointer(1, 2, gl.GL_FLOAT, False, 6 * 4, 4 * 4)
 
         self.texture = self.ddsFile.asQOpenGLTexture(gl, QOpenGLContext.currentContext())
 
