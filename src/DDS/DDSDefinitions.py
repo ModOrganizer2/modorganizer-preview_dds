@@ -235,7 +235,7 @@ class DDS_HEADER:
     dwDepth: int = 0
     dwMipMapCount: int = 0
     dwReserved1: List[int] = dataclasses.field(default_factory=lambda: [0] * 11, metadata={"count": 11})
-    ddspf: DDS_PIXELFORMAT = DDS_PIXELFORMAT()
+    ddspf: DDS_PIXELFORMAT = dataclasses.field(default_factory=DDS_PIXELFORMAT)
     dwCaps: Caps = 0
     dwCaps2: Caps2 = 0
     dwCaps3: int = 0
