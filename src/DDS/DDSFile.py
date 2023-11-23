@@ -161,7 +161,10 @@ class DDSFile:
         if self.header.dwCaps2 & DDSDefinitions.DDS_HEADER.Caps2.DDSCAPS2_CUBEMAP:
             # Lisa hasn't whipped David Wang into shape yet. At least there are fewer bugs than under Raja.
             # The specific bug has been reported and AMD "will try to reproduce it soon"
-            noDSA = "Radeon" in gl.glGetString(gl.GL_RENDERER) and self.glFormat.compressed
+            # MO 2.5.0: Radeon-specific code is causing crashing on the latest drivers
+            # Some cubemaps fail to render with or without these modifications
+            # noDSA = "Radeon" in gl.glGetString(gl.GL_RENDERER) and self.glFormat.compressed
+            noDSA = False
             if noDSA:
                 texture.bind()
             faceIndex = 0
