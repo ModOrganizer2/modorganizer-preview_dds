@@ -1,6 +1,6 @@
-from pathlib import Path
+import io
 
-from PyQt6.QtCore import QCoreApplication, qCritical
+from PyQt6.QtCore import QCoreApplication, qCritical, QFile, QIODeviceBase
 from PyQt6.QtOpenGL import QOpenGLTexture
 
 from . import DDSDefinitions
@@ -22,16 +22,26 @@ ddsCubemapFaces = {
 
 
 class DDSFile:
-    def __init__(self, fileName):
+    def __init__(self, fileData: bytes, fileName: str):
         self.fileName = fileName
         self.header = DDSDefinitions.DDS_HEADER()
         self.dxt10Header = None
         self.glFormat: GLTextureFormat = None
+        self.fileData = fileData
         self.data = None
         self.isCubemap = None
 
+    @classmethod
+    def fromFile(cls, fileName: str):
+        file = QFile(fileName)
+        if file.open(QIODeviceBase.OpenModeFlag.ReadOnly):
+            fileData = file.readAll()
+        else:
+            raise DDSReadException()
+        return cls(fileData.data(), fileName)
+
     def load(self):
-        with Path(self.fileName).open('rb') as file:
+        with io.BytesIO(self.fileData) as file:
             magicNumber = file.read(4)
             if magicNumber != DDSDefinitions.DDS_MAGIC_NUMBER:
                 qCritical(self.tr("Magic number mismatch."))

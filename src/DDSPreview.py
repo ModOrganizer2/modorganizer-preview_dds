@@ -3,17 +3,17 @@ import sys
 import threading
 import enum
 
-from PyQt6.QtCore import QCoreApplication, qDebug, Qt
-from PyQt6.QtGui import QColor, QOpenGLContext, QSurfaceFormat, QWindow, QMatrix4x4, QVector4D
+from PyQt6.QtCore import QCoreApplication, qDebug, Qt, QSize
+from PyQt6.QtGui import QColor, QOpenGLContext, QSurfaceFormat, QMatrix4x4, QVector4D
 from PyQt6.QtOpenGLWidgets import QOpenGLWidget
-from PyQt6.QtWidgets import QCheckBox, QDialog, QGridLayout, QLabel, QPushButton, QWidget, QColorDialog, QComboBox
+from PyQt6.QtWidgets import QGridLayout, QLabel, QPushButton, QWidget, QColorDialog, QComboBox
 from PyQt6.QtOpenGL import QOpenGLBuffer, QOpenGLDebugLogger, QOpenGLShader, QOpenGLShaderProgram, QOpenGLTexture, \
     QOpenGLVersionProfile, QOpenGLVertexArrayObject, QOpenGLFunctions_4_1_Core, QOpenGLVersionFunctionsFactory
 
 from DDS.DDSFile import DDSFile
 
 if "mobase" not in sys.modules:
-    import mock_mobase as mobase
+    import mobase
 
 vertexShader2D = """
 #version 150
@@ -215,7 +215,6 @@ class DDSWidget(QOpenGLWidget):
         self.vbo = None
         self.vao = None
 
-
         if debugContext:
             format = QSurfaceFormat()
             format.setOption(QSurfaceFormat.FormatOption.DebugContext)
@@ -407,7 +406,7 @@ class DDSPreview(mobase.IPluginPreview):
         self.options = None
         self.channelManager = None
 
-    def init(self, organizer):
+    def init(self, organizer: mobase.IOrganizer):
         self.__organizer = organizer
         savedColour = QColor(self.pluginSetting("background r"), self.pluginSetting("background g"),
                              self.pluginSetting("background b"), self.pluginSetting("background a"))
@@ -448,11 +447,19 @@ class DDSPreview(mobase.IPluginPreview):
                 mobase.PluginSetting("channels", self.tr("The colour channels that are displayed."),
                                      ColourChannels.RGBA.name)]
 
-    def supportedExtensions(self):
+    def supportedExtensions(self) -> set[str]:
         return {"dds"}
 
-    def genFilePreview(self, fileName, maxSize):
-        ddsFile = DDSFile(fileName)
+    def supportsArchives(self) -> bool:
+        return True
+
+    def genFilePreview(self, fileName: str, maxSize: QSize) -> QWidget:
+        return self.previewFromDDSFile(DDSFile.fromFile(fileName))
+
+    def genDataPreview(self, fileData: bytes, fileName: str, maxSize: QSize) -> QWidget:
+        return self.previewFromDDSFile(DDSFile(fileData, fileName))
+
+    def previewFromDDSFile(self, ddsFile: DDSFile) -> QWidget:
         ddsFile.load()
         layout = QGridLayout()
         # Image grows before label and button
